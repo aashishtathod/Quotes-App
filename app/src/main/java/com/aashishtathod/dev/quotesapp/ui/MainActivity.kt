@@ -6,14 +6,17 @@ import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.isVisible
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.paging.LoadState
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.aashishtathod.dev.quotesapp.R
 import com.aashishtathod.dev.quotesapp.databinding.ActivityMainBinding
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
@@ -55,7 +58,6 @@ class MainActivity : AppCompatActivity() {
             repeatOnLifecycle(Lifecycle.State.CREATED) {
                 viewModel.uiState.collect {
                     when (it) {
-
                         is QuoteUiState.None -> {
                             // do nothing
                         }
@@ -71,6 +73,46 @@ class MainActivity : AppCompatActivity() {
                         is QuoteUiState.Error -> {
                             Toast.makeText(this@MainActivity, "Error", Toast.LENGTH_SHORT).show()
                         }
+
+                    }
+                }
+            }
+        }
+
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.CREATED) {
+                adapter.loadStateFlow.collectLatest { loadStates ->
+                    when (loadStates.refresh) {
+                        is LoadState.Error -> {
+                            binding.refreshProgressBar.isVisible = false
+                            Toast.makeText(this@MainActivity, "Refresh Error", Toast.LENGTH_SHORT)
+                                .show()
+                        }
+
+                        is LoadState.Loading -> binding.refreshProgressBar.isVisible = true
+                        is LoadState.NotLoading -> binding.refreshProgressBar.isVisible = false
+                    }
+
+                    when (loadStates.append) {
+                        is LoadState.Error -> {
+                            binding.appendProgressBar.isVisible = false
+                            Toast.makeText(this@MainActivity, "Append Error", Toast.LENGTH_SHORT)
+                                .show()
+                        }
+
+                        is LoadState.Loading -> binding.appendProgressBar.isVisible = true
+                        is LoadState.NotLoading -> binding.appendProgressBar.isVisible = false
+                    }
+
+                    when (loadStates.prepend) {
+                        is LoadState.Error -> {
+                            binding.prependProgressBar.isVisible = false
+                            Toast.makeText(this@MainActivity, "Prepend Error", Toast.LENGTH_SHORT)
+                                .show()
+                        }
+
+                        is LoadState.Loading -> binding.prependProgressBar.isVisible = true
+                        is LoadState.NotLoading -> binding.prependProgressBar.isVisible = false
 
                     }
                 }
